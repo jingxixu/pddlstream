@@ -1,57 +1,77 @@
 (define (domain pick-and-place)
   (:requirements :strips :equality)
+
+  ; there is no type requirements on the predicate definition
   (:predicates
-    (Conf ?q)
-    (Block ?b)
-    (Pose ?b ?p) ;each pose is tied with some block
-    (Region ?r)
-    (Traj ?t)
-    (Kin ?b ?q ?p)
-    (AtPose ?b ?p)
-    (AtConf ?q)
-    (Holding ?b)
+    ; Static Predicates
+
+    (Conf ?conf)
+    (Block ?block)
+    (Pose ?block ?pose)
+    (Region ?region)
+    (Traj ?traj)
+    (Kin ?block ?conf ?pose)
+    (Placeable ?block ?region)
+    (Motion ?conf ?traj ?conf2)
+
+    ; Fluent Predicates
+
+    (AtPose ?block ?pose)
+    (AtConf ?conf)
+    (Holding ?block)
+    (Contained ?block ?pose ?region)
     (HandEmpty)
-    (PoseCollision ?b1 ?p1 ?b2 ?p2)
-    (UnsafePose ?b ?p)
-    (CanMove)
-    (Contained ?b ?p ?r)
-    (In ?b ?r)
-    (Placeable ?b ?r)
-    (Motion ?q1 ?t ?q2)
+    (CanMove)   ;prevent double move
+
+
+    ; Derived predicate
+
+    (UnsafePose ?block ?pose)
+    (In ?block ?region)
+
+    ; External predicate, defined in stream
+
+    (PoseCollision ?block ?pose ?block2 ?pose2) ;we only care pose collision while ignoring trajectory collision
   )
+
+  ;External functions, defined in stream
+
   (:functions
-    (Distance ?q1 ?q2)
+    (Distance ?conf ?conf2)
   )
+
   (:action move
-    :parameters (?q1 ?t ?q2)
-    :precondition (and (Motion ?q1 ?t ?q2)
-                       (AtConf ?q1) (CanMove))
-    :effect (and (AtConf ?q2)
-                 (not (AtConf ?q1)) (not (CanMove))
-             (increase (total-cost) (Distance ?q1 ?q2)))
+    :parameters (?conf ?traj ?conf2)
+    :precondition (and (Motion ?conf ?traj ?conf2)
+                       (AtConf ?conf) (CanMove))
+    :effect (and (AtConf ?conf2)
+                (not (AtConf ?conf)) (not (CanMove))
+                (increase (total-cost) (Distance ?conf ?conf2)))
   )
   (:action pick
-    :parameters (?b ?p ?q)
-    :precondition (and (Kin ?b ?q ?p)
-                       (AtConf ?q) (AtPose ?b ?p) (HandEmpty))
-    :effect (and (Holding ?b) (CanMove)
-                 (not (AtPose ?b ?p)) (not (HandEmpty))
+    :parameters (?block ?pose ?conf)
+    :precondition (and (Kin ?block ?conf ?pose)
+                       (AtConf ?conf) (AtPose ?block ?pose) (HandEmpty))
+    :effect (and (Holding ?block) (CanMove)
+                 (not (AtPose ?block ?pose)) (not (HandEmpty))
                  (increase (total-cost) 1))
   )
   (:action place
-    :parameters (?b ?p ?q)
-    :precondition (and (Kin ?b ?q ?p)
-                       (AtConf ?q) (Holding ?b) (not (UnsafePose ?b ?p)))
-    :effect (and (AtPose ?b ?p) (HandEmpty) (CanMove)
-                 (not (Holding ?b))
+    :parameters (?block ?pose ?conf)
+    :precondition (and (Kin ?block ?conf ?pose)
+                       (AtConf ?conf) (Holding ?block) (not (UnsafePose ?block ?pose)))
+    :effect (and (AtPose ?block ?pose) (HandEmpty) (CanMove)
+                 (not (Holding ?block))
                  (increase (total-cost) 1))
   )
-  (:derived (UnsafePose ?b1 ?p1)
-    (exists (?b2 ?p2) (and (Pose ?b1 ?p1) (Pose ?b2 ?p2) (PoseCollision ?b1 ?p1 ?b2 ?p2)
-                            (AtPose ?b2 ?p2)))
+
+  (:derived (UnsafePose ?block ?pose)
+    (exists (?block2 ?pose2) (and (Pose ?block ?pose) (Pose ?block2 ?pose2)
+                                  (PoseCollision ?block ?pose ?block2 ?pose2)
+                                  (AtPose ?block2 ?pose2)))
   )
-  (:derived (In ?b ?r)
-    (exists (?p) (and (Pose ?b ?p) (Region ?r) (Contained ?b ?p ?r)
-                            (AtPose ?b ?p)))
+  (:derived (In ?block ?region)
+    (exists (?pose) (and (Pose ?block ?pose) (Region ?region) (Contained ?block ?pose ?region)
+                            (AtPose ?block ?pose)))
   )
 )

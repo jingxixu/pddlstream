@@ -1,26 +1,32 @@
 (define (stream pick-and-place)
-  (:function (Distance ?q1 ?q2)
-    (and (Conf ?q1) (Conf ?q2))
+
+  ; External function
+  (:function (Distance ?conf ?conf2)
+    (and (Conf ?conf) (Conf ?conf2))
   )
-  (:predicate (PoseCollision ?b1 ?p1 ?b2 ?p2)
-    (and (Pose ?b1 ?p1) (Pose ?b2 ?p2))
+
+  ; External Predicate
+  (:predicate (PoseCollision ?block ?pose ?block2 ?pose2)
+    (and (Pose ?block ?pose) (Pose ?block2 ?pose2))
   )
+
+  ;Streams
   (:stream sample-pose
-    :inputs (?b ?r)
-    :domain (Placeable ?b ?r)
-    :outputs (?p)
-    :certified (and (Pose ?b ?p) (Contained ?b ?p ?r))
+    :inputs (?block ?region)
+    :domain (Placeable ?block ?region)
+    :outputs (?pose)
+    :certified (and (Pose ?block ?pose) (Contained ?block ?pose ?region))
   )
-  (:stream inverse-kinematics ;Comments?
-    :inputs (?b ?p)
-    :domain (Pose ?b ?p)
-    :outputs (?q)
-    :certified (and (Conf ?q) (Kin ?b ?q ?p))
+  (:stream inverse-kinematics
+    :inputs (?block ?pose)
+    :domain (Pose ?block ?pose)
+    :outputs (?conf)
+    :certified (and (Conf ?conf) (Kin ?block ?conf ?pose))
   )
-  (:stream plan-motion ;Comments?
-    :inputs (?q1 ?q2)
-    :domain (and (Conf ?q1) (Conf ?q2))
-    :outputs (?t)
-    :certified (and (Traj ?t) (Motion ?q1 ?t ?q2))
+  (:stream plan-motion
+    :inputs (?conf ?conf2)
+    :domain (and (Conf ?conf) (Conf ?conf2))
+    :outputs (?traj)
+    :certified (and (Traj ?traj) (Motion ?conf ?traj ?conf2))
   )
 )

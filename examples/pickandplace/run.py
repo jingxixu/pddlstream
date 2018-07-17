@@ -67,7 +67,6 @@ def main():
     def sample_pose(blk, region):
         return ((np.random.uniform(region[0]+BLOCK_WIDTH/2, region[1]-BLOCK_WIDTH/2), 0), )
 
-    # TODO why do these two functions return a tuple???
     def inverse_kinematics(blk, pose):
         return (pose - GRASP, )
 
