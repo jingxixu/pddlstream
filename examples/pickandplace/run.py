@@ -1,32 +1,23 @@
-
 import numpy as np
-from pddlstream.algorithms.downward import TOTAL_COST
 from pddlstream.algorithms.focused import solve_focused
-
-from examples.continuous_tamp.constraint_solver import cfree_motion_fn
-from examples.continuous_tamp.primitives import get_pose_gen, collision_test, \
-    distance_fn, inverse_kin_fn, get_region_test, plan_motion, get_blocked_problem, draw_state, get_random_seed, \
-    TAMPState
-from examples.continuous_tamp.viewer import ContinuousTMPViewer, GROUND
-from examples.discrete_tamp.viewer import COLORS
 from pddlstream.algorithms.incremental import solve_incremental
 from pddlstream.language.conversion import And, Equal
-from pddlstream.language.generator import from_gen_fn, from_fn, from_test
-from pddlstream.language.synthesizer import StreamSynthesizer
-from pddlstream.utils import print_solution, user_input, read, INF, get_file_path
+from pddlstream.language.generator import from_gen_fn, from_fn
+from pddlstream.utils import print_solution, read, INF, get_file_path
 
 
 def main():
     domain_pddl = read(get_file_path(__file__, 'domain.pddl'))
     stream_pddl = read(get_file_path(__file__, 'stream.pddl'))
 
+    # starting objects
     start_conf = np.array([0, 5])
     p0 = np.array([0, 0])
     goal_region = np.array([5, 10])
     b0 = 'block0'
-    ground = np.array([-15, 15])
+    ground = np.array([-5, 15])
 
-    init = [
+    initial_atoms = [
         ('CanMove',),
         ('Conf', start_conf),
         ('AtConf', start_conf),
@@ -45,7 +36,7 @@ def main():
         ('AtConf', start_conf)
     ]
 
-    goal = And(*goal_literals)
+    goal_formula = And(*goal_literals)
 
     ## environments
     # The pose of block is the center of bottom line
@@ -84,7 +75,7 @@ def main():
                   'plan-motion': from_fn(plan_motion)}
 
     # A pddlstream problem
-    problem = domain_pddl, constant_map, stream_pddl, stream_map, init, goal
+    problem = domain_pddl, constant_map, stream_pddl, stream_map, initial_atoms, goal_formula
     # solution = solve_incremental(problem, unit_costs=False)
     solution = solve_incremental(problem, unit_costs=False)
     # plan, cost, evaluations = solution
